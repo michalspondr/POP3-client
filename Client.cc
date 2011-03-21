@@ -8,6 +8,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <string>
+#include <unistd.h>
+//#include <termios.h>
+//#include <stdio.h>
 
 Client::Client(const std::string& ahostname, unsigned short aport) {
 
@@ -51,13 +54,11 @@ Client::~Client() {
 
 void Client::login(std::string& user) {
 	// get password from commandline
-	std::string password;
-	std::cout << "Enter password: ";
-	std::getline(std::cin, password);	// TODO disable onscreen printing!
+	char *pass = getpass("Enter password (won't be printed):");
 
 	try {
 		std::string response = sendReceive("USER " + user + "\n");
-		response = sendReceive("PASS " + password + "\n");
+		response = sendReceive("PASS " + (std::string)pass + "\n");
 	}
 	catch (const char * e) {
 		std::string tmp(e);
