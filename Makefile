@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-g
 
-all: Client.o pop3client.cc
+pop3client: Client.o pop3client.cc
 	$(CC) $(CFLAGS) -o pop3client pop3client.cc Client.o
 
 Client.o: Client.cc Client.h

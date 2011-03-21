@@ -26,8 +26,9 @@ class Client {
 	~Client();
 
 	void login(std::string& user);
-	unsigned int listMails();
+	void listMails();
 	void getMail(unsigned int i);
+	void quit();
 };
 
 

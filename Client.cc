@@ -13,8 +13,8 @@ Client::Client(const std::string& ahostname, unsigned short aport) {
 
 	// get host IP address
 	if ((hostinfo = gethostbyname(ahostname.c_str())) == NULL) {
-		std::cerr << "Can't get hostname info, error = " << h_errno << std::endl;	// TODO h_errno to be rewritten!
-		// TODO exception?
+		std::cerr << "Can't get hostname" << std::endl;
+		throw "Can't get host name";
 	}
 
 	// create socket
@@ -31,17 +31,17 @@ Client::Client(const std::string& ahostname, unsigned short aport) {
 	// connect
 	if ((connect(sockfd, (struct sockaddr *)&address, len)) != 0) {
 		std::cerr << "Can't connect to server, error = " << strerror(errno) << std::endl;
+		throw "Can't connect to server";
 	}
 
 	// receive greeting line
 	int result = recv(sockfd, buffer, BUFLEN, 0);
 	if (result != -1) {
 		buffer[result] = '\0';
-//		std::cout << buffer;
 	}
 	else {
 		std::cerr << "An error occured during receiving message from POP3 server: " << std::endl;
-		// TODO end?
+		throw "Error during receiving greeting line";
 	}
 }
 
@@ -53,16 +53,18 @@ void Client::login(std::string& user) {
 	// get password from commandline
 	std::string password;
 	std::cout << "Enter password: ";
-	std::getline(std::cin, password);	// TODO disable onscreen printing?
+	std::getline(std::cin, password);	// TODO disable onscreen printing!
 
 	try {
 		std::string response = sendReceive("USER " + user + "\n");
-//		std::cout << response;
 		response = sendReceive("PASS " + password + "\n");
-//		std::cout << response;
 	}
 	catch (const char * e) {
-		std::cerr << e << std::endl;
+		std::string tmp(e);
+		if (tmp == "Error response") {
+			std::cerr << "Login is unsuccessful" << std::endl;
+			throw e;
+		}
 	}
 	catch (...) {
 		std::cerr << "An error occured during login" << std::endl;
@@ -88,7 +90,7 @@ std::string Client::sendReceive(const std::string& message) {
 	// TODO make it usable
 	std::string response = (std::string)buffer;
 	if (! analyzeMessage(response)) {
-		
+		throw "Error response";
 	}
 	
 	return response;
@@ -101,7 +103,7 @@ bool Client::analyzeMessage(std::string& msg) {
 			return true;
 		}
 		else {
-			throw("Invalid position of +OK status\n");
+			throw("Invalid position of +OK status");
 		}
 	}
 	else if (msg.find("-ERR") != std::string::npos) {
@@ -109,11 +111,10 @@ bool Client::analyzeMessage(std::string& msg) {
 			return false;
 		}
 		else {
-			throw("Invalid position of -ERR status\n");
+			throw("Invalid position of -ERR status");
 		}
-	}
-	else {
-		throw("Incorrect response message\n");
+	} else {
+		throw("Incorrect response message");
 	}
 
 	return false;	// just to suppress warning messages
@@ -146,15 +147,14 @@ void Client::receiveMessage(std::string& message) {
 	message = tmp;
 }
 
-unsigned int Client::listMails() {
+void Client::listMails() {
 	std::string message = "LIST\n";
 
 	sendReceive(message);	// status message
 	receiveMessage(message);	// data
+	// TODO remove last dot + CRLF
 
 	std::cout << message;
-
-	return 0;	// TODO why it returns something?
 }
 
 void Client::getMail(unsigned int i) {
@@ -163,8 +163,29 @@ void Client::getMail(unsigned int i) {
 	ss << i;
 	std::string message = "RETR " + ss.str() + "\n";
 
-	sendReceive(message);	// status message
-	receiveMessage(message);	// data
+	try {
+		sendReceive(message);	// status message
+		receiveMessage(message);	// data
+	}
+	catch (const char * e) {
+		std::string tmp(e);
+		if (tmp == "Error response") {
+			std::cerr << "Can't get message " << i << std::endl;
+			throw e;
+		}
+	}
+	catch (...) {
+		std::cerr << "An error occured during receiving message " << i << std::endl;
+	}
 
 	std::cout << message;
+}
+
+void Client::quit() {
+	try {
+		sendReceive("QUIT\n");
+	}
+	catch (...) {
+		// an error occured but we don't care, we are quitting anyway
+	}
 }
