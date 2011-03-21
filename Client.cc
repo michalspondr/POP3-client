@@ -9,9 +9,10 @@
 #include <sys/socket.h>
 #include <string>
 #include <unistd.h>
-//#include <termios.h>
-//#include <stdio.h>
 
+/**
+ * Constructor class connect to a socket and receives a greeting line from POP3 server
+ */
 Client::Client(const std::string& ahostname, unsigned short aport) {
 
 	// get host IP address
@@ -38,26 +39,49 @@ Client::Client(const std::string& ahostname, unsigned short aport) {
 	}
 
 	// receive greeting line
+	// we just receive it, there is no need to print it
+	// one recv() is enough because according to RFC message can't be longer than BUFLEN (=512) octets
 	int result = recv(sockfd, buffer, BUFLEN, 0);
 	if (result != -1) {
 		buffer[result] = '\0';
 	}
 	else {
-		std::cerr << "An error occured during receiving message from POP3 server: " << std::endl;
+		std::cerr << "An error occured during receiving greeting message from POP3 server" << std::endl;
 		throw "Error during receiving greeting line";
 	}
 }
 
 Client::~Client() {
-	close(sockfd);
 }
 
+/**
+ * Login using a given username
+ * Password is read from command line and it is not printed while typing
+ */
 void Client::login(std::string& user) {
 	// get password from commandline
 	char *pass = getpass("Enter password (won't be printed):");
 
+	std::string response;
+	// USER
 	try {
-		std::string response = sendReceive("USER " + user + "\n");
+		response = sendReceive("USER " + user + "\n");
+	}
+	catch (const char * e) {
+		std::string tmp(e);
+		if (tmp == "Error response") {
+			// USER command can receive an -ERR message even if the user exists! (security reasons).
+			// If we receive -ERR for USER command, we ignore it
+		}
+		else throw e;
+	}
+	catch (...) {
+		std::cerr << "An error occured during login" << std::endl;
+		throw "Login error";
+	}
+
+	// PASS
+	try {
 		response = sendReceive("PASS " + (std::string)pass + "\n");
 	}
 	catch (const char * e) {
@@ -69,9 +93,14 @@ void Client::login(std::string& user) {
 	}
 	catch (...) {
 		std::cerr << "An error occured during login" << std::endl;
+		throw "Login error";
 	}
 }
 
+/**
+ * This method sends a message and receive the corresponding response message (not a data part!)
+ * It analyzes whether the message is +OK or -ERR and throws exception in case of error
+ */
 std::string Client::sendReceive(const std::string& message) {
 	// send
 	int result = send(sockfd, message.c_str(), message.length(), 0);
@@ -88,16 +117,18 @@ std::string Client::sendReceive(const std::string& message) {
 	}
 
 	// we've got the message, now check it
-	// TODO make it usable
 	std::string response = (std::string)buffer;
 	if (! analyzeMessage(response)) {
 		throw "Error response";
 	}
 	
 	return response;
-
 }
 
+/**
+ * Analyze a message whether it's +OK or -ERR
+ * Returns true in case of +OK, otherwise false
+ */
 bool Client::analyzeMessage(std::string& msg) {
 	if (msg.find("+OK") != std::string::npos) {
 		if (msg.substr(0,3) == "+OK") {	//		we need to be sure +OK is at the beginning
@@ -121,14 +152,23 @@ bool Client::analyzeMessage(std::string& msg) {
 	return false;	// just to suppress warning messages
 }
 
+/**
+ * Simply send a message to socket
+ */
 void Client::sendMessage(const std::string& message) {
 	int result = send(sockfd, message.c_str(), message.length(), 0);
 	if (result == -1) {
 		std::cerr << "Message can't be sent" << std::endl;
-		return;
+		throw "Message can't be sent";
 	}
 }
 
+/**
+ * Simple receive a message
+ * It can read multi-line messages, too
+ *
+ * This method doesn't check response status (+OK/-ERR) messages! It is supposed to read data part of message only!
+ */
 void Client::receiveMessage(std::string& message) {
 	int result=0;
 	std::string tmp;
@@ -145,9 +185,12 @@ void Client::receiveMessage(std::string& message) {
 		//  message doesn't end with CRLF -> it's not the end of message, we need to read further
 		//}
 	}
-	message = tmp;
+	message = tmp;	// final response
 }
 
+/**
+ * List all messages at POP3 server using the LIST command
+ */
 void Client::listMails() {
 	std::string message = "LIST\n";
 
@@ -158,6 +201,9 @@ void Client::listMails() {
 	std::cout << message;
 }
 
+/**
+ * Retrieve a given email using its ID number
+ */
 void Client::getMail(unsigned int i) {
 	// convert integer value to string
 	std::stringstream ss;
@@ -182,9 +228,13 @@ void Client::getMail(unsigned int i) {
 	std::cout << message;
 }
 
+/**
+ * Quit the POP3 session
+ */
 void Client::quit() {
 	try {
 		sendReceive("QUIT\n");
+//		close(sockfd);
 	}
 	catch (...) {
 		// an error occured but we don't care, we are quitting anyway

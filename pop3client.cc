@@ -78,8 +78,10 @@ int main(int argc, char *argv[]) {
 		else
 			client.listMails();
 
+		cout << "end1" << endl;
+
 		// finish session
-		client.quit();
+//		client.quit();
 	}
 	catch (const char *e) {
 		cerr << "POP3 client failed" << endl;
@@ -90,5 +92,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+
+	cout << "end2" << endl;
 	return 0;
 }
