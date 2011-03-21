@@ -56,5 +56,5 @@ int main(int argc, char *argv[]) {
 	client.login(username);
 
 	client.listMails();
-	client.getMail(1);
+	client.getMail(2);
 }
