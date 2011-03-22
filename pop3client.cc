@@ -12,7 +12,7 @@ using namespace std;
  */
 void usage() {
 	cout << endl << "Usage:" << endl <<
-	"./pop3client -h hostname [-p port] -u username -s [id]" << endl << endl <<
+	"./pop3client -h hostname [-p port] -u username [-s] [id]" << endl << endl <<
 	"-h hostname  Hostname or host IP address" << endl <<
 	"-p port      TCP port of server (default: 110)" << endl <<
 	"-u username  Username of mail account" << endl <<
