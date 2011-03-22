@@ -18,7 +18,7 @@ class Client {
 	unsigned short port;			/// port number (0-65535)
 	int sockfd;						/// socket to connect
 	struct hostent *hostinfo;		/// IP address + port
-	char buffer[BUFLEN];			/// buffer for receiving messages, 512 is max length of response message
+	char buffer[BUFLEN+1];			/// buffer for receiving messages, 512 is max length of response message, +1 is for terminating '\0' byte
 
 	std::string username;	/// login credentials
 

@@ -172,19 +172,21 @@ void Client::sendMessage(const std::string& message) {
 void Client::receiveMessage(std::string& message) {
 	int result=0;
 	std::string tmp;
+
+	// read data while there are any and no terminating CRLF has been found
 	while ((result = recv(sockfd, buffer, BUFLEN, 0)) > 0) {
 		buffer[result] = '\0';
 		tmp += buffer;
-		// if the message ends with CRLF, we don't continue on reading from socket
-		if (tmp.length() >= 2) { 
-			if (tmp.substr( tmp.length()-2, 2) == "\r\n") {
+
+		// check whether message ends up with "CRLF.CRLF". It indicates the end of message
+		if (tmp.length() >= 4) {
+			if (tmp.substr( tmp.length()-5, 5) == "\r\n.\r\n") {
+				std::cout << "Terminating CRLF.CRLF found" << std::endl;
 				break;
 			}
 		}
-		// else {
-		//  message doesn't end with CRLF -> it's not the end of message, we need to read further
-		//}
 	}
+
 	message = tmp;	// final response
 }
 
@@ -209,7 +211,7 @@ void Client::getMail(unsigned int i) {
 	std::stringstream ss;
 	ss << i;
 	std::string message = "RETR " + ss.str() + "\n";
-
+	
 	try {
 		sendReceive(message);	// status message
 		receiveMessage(message);	// data
@@ -234,7 +236,7 @@ void Client::getMail(unsigned int i) {
 void Client::quit() {
 	try {
 		sendReceive("QUIT\n");
-//		close(sockfd);
+		close(sockfd);
 	}
 	catch (...) {
 		// an error occured but we don't care, we are quitting anyway
