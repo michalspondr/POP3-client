@@ -11,11 +11,12 @@ using namespace std;
  * Prints usage of the program
  */
 void usage() {
-	cout << "./pop3client -h hostname [-p port] -u username [id]" << endl << endl <<
+	cout << endl << "Usage:" << endl <<
+	"./pop3client -h hostname [-p port] -u username [id]" << endl << endl <<
 	"-h hostname\tHostname or host IP address" << endl <<
 	"-p port\t\tTCP port of server (default: 110)" << endl <<
 	"-u username\tUsername of mail account" << endl <<
-	"id\t\tID message which will be retrieved. Without this parameter a list of all messages is printed" << endl;
+	"id\t\tID of message which will be retrieved. Without this parameter a list of all messages is printed" << endl;
 
 }
 
@@ -42,12 +43,15 @@ int main(int argc, char *argv[]) {
 				username = (char *)optarg;
 				break;
 			default:
+				// invalid argument
+				usage();
+				return 1;
 				break;
 		}
 	}
 
 	// check eventual ID of message
-	unsigned int id = 0;
+	unsigned int id = 0;	// default value 0 means no ID message
 	if (argc > optind) {	// there are some other parameters yet
 		// we will process only the first surplus parameter, another parameters will be omitted
 		// we suppose the next parameter is the id of the message
@@ -66,7 +70,9 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-
+	//
+	// Main part
+	//
 	// now we can connect to a POP3 server
 	try {
 		Client client(hostname, port);
@@ -82,7 +88,7 @@ int main(int argc, char *argv[]) {
 		client.quit();
 	}
 	catch (const char *e) {
-		cerr << "POP3 client failed" << endl;
+		cerr << "POP3 client failed: " << e << endl;
 		return 1;
 	}
 	catch (...) {

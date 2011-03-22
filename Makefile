@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-g -Wall -O2
+CFLAGS=-Wall -O2
 
 pop3client: Client.o pop3client.cc
 	$(CC) $(CFLAGS) -o pop3client pop3client.cc Client.o

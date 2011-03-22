@@ -13,7 +13,8 @@
 /**
  * Constructor class connect to a socket and receives a greeting line from POP3 server
  */
-Client::Client(const std::string& ahostname, unsigned short aport) {
+Client::Client(const std::string& ahostname, const unsigned short aport) 
+try {
 
 	// get host IP address
 	if ((hostinfo = gethostbyname(ahostname.c_str())) == NULL) {
@@ -49,6 +50,8 @@ Client::Client(const std::string& ahostname, unsigned short aport) {
 		std::cerr << "An error occured during receiving greeting message from POP3 server" << std::endl;
 		throw "Error during receiving greeting line";
 	}
+} catch (...) {
+	std::cerr << "Can't create client";
 }
 
 Client::~Client() {
@@ -58,7 +61,7 @@ Client::~Client() {
  * Login using a given username
  * Password is read from command line and it is not printed while typing
  */
-void Client::login(std::string& user) {
+void Client::login(const std::string& user) {
 	// get password from commandline
 	char *pass = getpass("Enter password (won't be printed):");
 
@@ -105,14 +108,14 @@ std::string Client::sendReceive(const std::string& message) {
 	// send
 	int result = send(sockfd, message.c_str(), message.length(), 0);
 	if (result == -1) {
-		std::cerr << "Message can't be sent" << std::endl;
+		throw "Message can't be sent";
 	}
 	
 	// receive
 	result = recv(sockfd, buffer, BUFLEN, 0);
 	buffer[result] = '\0';
 	if (result == -1) {
-		std::cerr << "Message can't be received" << std::endl;
+		throw "Message can't be received";
 		close(sockfd);
 	}
 
@@ -129,7 +132,8 @@ std::string Client::sendReceive(const std::string& message) {
  * Analyze a message whether it's +OK or -ERR
  * Returns true in case of +OK, otherwise false
  */
-bool Client::analyzeMessage(std::string& msg) {
+bool Client::analyzeMessage(std::string& msg) const {
+	// +OK
 	if (msg.find("+OK") != std::string::npos) {
 		if (msg.substr(0,3) == "+OK") {	//		we need to be sure +OK is at the beginning
 			return true;
@@ -138,8 +142,11 @@ bool Client::analyzeMessage(std::string& msg) {
 			throw("Invalid position of +OK status");
 		}
 	}
+	// -ERR
 	else if (msg.find("-ERR") != std::string::npos) {
-		if (msg.substr(0,4) == "-ERR") {	//	we need to be sure -ERR is at the beginning	
+		if (msg.substr(0,4) == "-ERR") {	//	we need to be sure -ERR is at the beginning
+			// print status
+			std::cerr << "Error response from server:" << msg.substr(4, msg.length()-4);
 			return false;
 		}
 		else {
@@ -180,8 +187,7 @@ void Client::receiveMessage(std::string& message) {
 
 		// check whether message ends up with "CRLF.CRLF". It indicates the end of message
 		if (tmp.length() >= 4) {
-			if (tmp.substr( tmp.length()-5, 5) == "\r\n.\r\n") {
-				std::cout << "Terminating CRLF.CRLF found" << std::endl;
+			if (tmp.substr( tmp.length()-5, 5) == "\r\n.\r\n") {	// we've found the end of multi-line message
 				break;
 			}
 		}
@@ -198,7 +204,8 @@ void Client::listMails() {
 
 	sendReceive(message);	// status message
 	receiveMessage(message);	// data
-	// TODO remove last dot + CRLF
+	// remove last dot + CRLF
+	message.erase( message.length() - 3, 3);
 
 	std::cout << message;
 }
@@ -206,7 +213,7 @@ void Client::listMails() {
 /**
  * Retrieve a given email using its ID number
  */
-void Client::getMail(unsigned int i) {
+void Client::getMail(const unsigned int i) {
 	// convert integer value to string
 	std::stringstream ss;
 	ss << i;
@@ -227,7 +234,10 @@ void Client::getMail(unsigned int i) {
 		std::cerr << "An error occured during receiving message " << i << std::endl;
 	}
 
-	std::cout << message;
+	// print message without header and last termination octet
+	const size_t pos = message.find("\r\n\r\n");
+	std::cout << message.substr(pos+4, message.length() - pos-4 -3 );	// last "-3" is to remove last ".\r\n"
+	//	std::cout << message;	
 }
 
 /**
