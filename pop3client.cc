@@ -13,21 +13,22 @@ using namespace std;
 void usage() {
 	cout << endl << "Usage:" << endl <<
 	"./pop3client -h hostname [-p port] -u username [id]" << endl << endl <<
-	"-h hostname\tHostname or host IP address" << endl <<
-	"-p port\t\tTCP port of server (default: 110)" << endl <<
-	"-u username\tUsername of mail account" << endl <<
-	"id\t\tID of message which will be retrieved. Without this parameter a list of all messages is printed" << endl;
-
+	"-h hostname  Hostname or host IP address" << endl <<
+	"-p port      TCP port of server (default: 110)" << endl <<
+	"-u username  Username of mail account" << endl <<
+	"-s           Prints short messages without header" << endl <<
+	"id           ID of message which will be retrieved. Without this parameter a list of all messages is printed" << endl;
 }
 
 int main(int argc, char *argv[]) {
+	bool shortMessage=false;
 	string hostname = "";
 	string username = "";
 	unsigned short port = POP3_PORT;	// default
 	
 	// process input arguments
 	char c;
-	while ((c = getopt(argc, argv, "h:p:u:")) != -1) {
+	while ((c = getopt(argc, argv, "h:p:u:s")) != -1) {
 		switch(c) {
 			case 'h' : // hostname
 				hostname = (char *)optarg;
@@ -41,6 +42,9 @@ int main(int argc, char *argv[]) {
 				break;
 			case 'u':
 				username = (char *)optarg;
+				break;
+			case 's':
+				shortMessage = true;
 				break;
 			default:
 				// invalid argument
@@ -77,6 +81,7 @@ int main(int argc, char *argv[]) {
 	try {
 		Client client(hostname, port);
 		client.login(username);
+		client.setShortMessage(shortMessage);
 
 		// print message if we have a message ID, otherwise print list of all messages
 		if (id != 0)

@@ -14,7 +14,8 @@
  * Constructor class connect to a socket and receives a greeting line from POP3 server
  */
 Client::Client(const std::string& ahostname, const unsigned short aport) 
-try {
+try : shortMessage(false) {
+	memset(buffer, 0, sizeof(buffer));
 
 	// get host IP address
 	if ((hostinfo = gethostbyname(ahostname.c_str())) == NULL) {
@@ -25,6 +26,7 @@ try {
 	// create socket
 	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 		std::cerr << "Can't open socket, error = " << strerror(errno) << std::endl;
+		throw "Can't open socket";
 	}
 	struct sockaddr_in address;
 	memset(&address, 0, sizeof(address));
@@ -52,9 +54,11 @@ try {
 	}
 } catch (...) {
 	std::cerr << "Can't create client";
+	throw;
 }
 
 Client::~Client() {
+	close(sockfd);
 }
 
 /**
@@ -204,8 +208,11 @@ void Client::listMails() {
 
 	sendReceive(message);	// status message
 	receiveMessage(message);	// data
-	// remove last dot + CRLF
-	message.erase( message.length() - 3, 3);
+
+	if (shortMessage) {
+		// remove last dot + CRLF
+		message.erase( message.length() - 3, 3);
+	}
 
 	std::cout << message;
 }
@@ -234,10 +241,13 @@ void Client::getMail(const unsigned int i) {
 		std::cerr << "An error occured during receiving message " << i << std::endl;
 	}
 
-	// print message without header and last termination octet
-	const size_t pos = message.find("\r\n\r\n");
-	std::cout << message.substr(pos+4, message.length() - pos-4 -3 );	// last "-3" is to remove last ".\r\n"
-	//	std::cout << message;	
+	if (shortMessage) {
+		// print message without header and last termination octet
+		const size_t pos = message.find("\r\n\r\n");
+		std::cout << message.substr(pos+4, message.length() - pos-4 -3 );	// last "-3" is to remove last ".\r\n"
+	}
+	else
+		std::cout << message;	
 }
 
 /**

@@ -23,6 +23,8 @@ class Client {
 
 	std::string username;			/// username to log in, password won't be stored here, it's received interactively
 
+	bool shortMessage;				/// if true prints full message with header, if false prints data part only
+
 	std::string sendReceive(const std::string& message);	/// send a message and receive response message
 	void sendMessage(const std::string& message);			/// send message to server
 	void receiveMessage(std::string& message);				/// receive message from server
@@ -32,6 +34,7 @@ class Client {
 	Client(const std::string& ahostname, const unsigned short aport=POP3_PORT);
 	~Client();
 
+	void setShortMessage(const bool type=false)	{ shortMessage = type; }		// set verbose type
 	void login(const std::string& user);		// login with a given username
 	void listMails();					// list all emails
 	void getMail(const unsigned int i);	// retrieve a given email

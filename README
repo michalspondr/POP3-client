@@ -1,5 +1,5 @@
 Jednoduchy POP3 klient ovladany z prikazove radky.
-Umi se prihlasit k POP3 serveru a vypsat seznam zprav. Pri zadani konkretniho ID zpravy tuto zpravu vypise (neformatovane, neresi quoted-printable ani HTML zpravy, nanejvyse odstrani koncove tecky). Heslo se zadava interaktivne, neni vypisovano na obrazovku a nelze ho zadat jako parametr na prikazove radce.
+Umi se prihlasit k POP3 serveru a vypsat seznam zprav (na kazdem radku ID zpravy a pocet oktetu (bytu), kolik zprava zabira). Pri zadani konkretniho ID zpravy tuto zpravu vypise (neformatovane, neresi quoted-printable ani HTML zpravy, nanejvyse odstrani koncove tecky). Heslo se zadava interaktivne, neni vypisovano na obrazovku a nelze ho zadat jako parametr na prikazove radce. Zpravy nejsou po precteni ze serveru mazany.
 
 Usage:
 ./pop3client -h hostname [-p port] -u username [id]
@@ -7,5 +7,6 @@ Usage:
 -h hostname     Hostname or host IP address
 -p port         TCP port of server (default: 110)
 -u username     Username of mail account
+-s              Prints short messages without header
 id              ID of message which will be retrieved. Without this parameter a list of all messages is printed
 
