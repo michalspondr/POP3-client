@@ -128,7 +128,7 @@ std::string Client::sendReceive(const std::string& message) {
 	if (! analyzeMessage(response)) {
 		throw "Error response";
 	}
-	
+
 	return response;
 }
 
@@ -190,11 +190,13 @@ void Client::receiveMessage(std::string& message) {
 		tmp += buffer;
 
 		// check whether message ends up with "CRLF.CRLF". It indicates the end of message
-		if (tmp.length() >= 4) {
+		if (tmp.length() >= 5) {
 			if (tmp.substr( tmp.length()-5, 5) == "\r\n.\r\n") {	// we've found the end of multi-line message
 				break;
 			}
 		}
+		else if (tmp == ".\r\n")
+			break;
 	}
 
 	message = tmp;	// final response
@@ -208,6 +210,11 @@ void Client::listMails() {
 
 	sendReceive(message);	// status message
 	receiveMessage(message);	// data
+
+	if (message.length() == 3) {	// = ".CRLF"
+		std::cout << "No new messages" << std::endl;
+		return;
+	}
 
 	if (shortMessage) {
 		// remove last dot + CRLF
